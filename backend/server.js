@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/error');
+const { generalLimiter, authLimiter, apiLimiter } = require('./middleware/rateLimit');
 
 // Load env vars
 dotenv.config();
@@ -19,6 +20,9 @@ app.use(express.json());
 // Enable CORS
 app.use(cors());
 
+// Apply general rate limiter to all requests
+app.use(generalLimiter);
+
 // Set static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -31,14 +35,14 @@ const reviewRoutes = require('./routes/reviews');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/users');
 
-// Mount routers
-app.use('/api/auth', authRoutes);
-app.use('/api/listings', listingRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/users', userRoutes);
+// Mount routers with rate limiting
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/listings', apiLimiter, listingRoutes);
+app.use('/api/bookings', apiLimiter, bookingRoutes);
+app.use('/api/messages', apiLimiter, messageRoutes);
+app.use('/api/reviews', apiLimiter, reviewRoutes);
+app.use('/api/admin', apiLimiter, adminRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
